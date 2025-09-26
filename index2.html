@@ -1,0 +1,1144 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Gastos</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 0;
+        }
+        
+        /* Abas de navegação */
+        .tabs {
+            display: flex;
+            background: white;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            padding: 5px 0;
+        }
+        
+        .tab {
+            flex: 1;
+            text-align: center;
+            padding: 12px 0;
+            font-weight: 600;
+            color: #7f8c8d;
+            transition: all 0.3s;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        
+        .tab.active {
+            color: #4a6491;
+        }
+        
+        .tab i {
+            display: block;
+            margin: 0 auto 5px;
+            font-size: 1.2rem;
+        }
+        
+        /* Conteúdo das abas */
+        .tab-content {
+            display: none;
+            padding: 15px;
+            padding-bottom: 70px; /* Espaço para a barra de navegação */
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .section {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+            margin-bottom: 20px;
+        }
+        
+        h2 {
+            margin-bottom: 18px;
+            color: #2c3e50;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #eee;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        h2 i {
+            color: #4a6491;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 0.9rem;
+        }
+        
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            -webkit-appearance: none;
+        }
+        
+        .btn {
+            display: block;
+            width: 100%;
+            background: #4a6491;
+            color: white;
+            padding: 16px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: 600;
+            transition: background 0.3s;
+            text-align: center;
+        }
+        
+        .btn:active {
+            background: #2c3e50;
+            transform: scale(0.98);
+        }
+        
+        .btn-success {
+            background: #2ecc71;
+        }
+        
+        .btn-success:active {
+            background: #27ae60;
+        }
+        
+        .btn-danger {
+            background: #e74c3c;
+        }
+        
+        .btn-danger:active {
+            background: #c0392b;
+        }
+        
+        .summary-cards {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .card {
+            background: linear-gradient(135deg, #4a6491, #2c3e50);
+            color: white;
+            padding: 18px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        
+        .card h3 {
+            font-size: 1rem;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        .card p {
+            font-size: 1.6rem;
+            font-weight: bold;
+        }
+        
+        .limit-card {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+        
+        .limit-card.good {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+        }
+        
+        .limit-card.warning {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+        }
+        
+        .progress-bar {
+            height: 20px;
+            background-color: #ecf0f1;
+            border-radius: 10px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+        
+        .progress {
+            height: 100%;
+            background-color: #2ecc71;
+            border-radius: 10px;
+            transition: width 0.3s;
+        }
+        
+        .progress.warning {
+            background-color: #f39c12;
+        }
+        
+        .progress.danger {
+            background-color: #e74c3c;
+        }
+        
+        .progress-text {
+            text-align: center;
+            font-weight: 600;
+            margin-top: 5px;
+            font-size: 0.9rem;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 0.9rem;
+        }
+        
+        th, td {
+            padding: 12px 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background-color: #4a6491;
+            color: white;
+            position: sticky;
+            top: 0;
+        }
+        
+        tr:last-child td {
+            border-bottom: none;
+        }
+        
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            max-height: 400px;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .negative {
+            color: #e74c3c;
+            font-weight: 600;
+        }
+        
+        .positive {
+            color: #2ecc71;
+            font-weight: 600;
+        }
+        
+        .actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        
+        .actions button {
+            flex: 1;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 30px 0;
+            color: #7f8c8d;
+        }
+        
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            color: #bdc3c7;
+        }
+        
+        .empty-state p {
+            font-size: 1.1rem;
+        }
+        
+        /* Safe areas para iPhone */
+        .safe-area-top {
+            padding-top: env(safe-area-inset-top);
+        }
+        
+        .safe-area-bottom {
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #333;
+            color: white;
+            padding: 16px 20px;
+            border-radius: 10px;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.9rem;
+            max-width: 80%;
+            text-align: center;
+        }
+        
+        /* Estilo para botões pequenos */
+        .btn-small {
+            padding: 5px 10px;
+            font-size: 0.8rem;
+        }
+        
+        .currency-info {
+            text-align: center;
+            padding: 10px;
+            font-size: 0.9rem;
+            color: #7f8c8d;
+        }
+        
+        /* Indicador de aba ativa */
+        .tab-indicator {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 3px;
+            background-color: #4a6491;
+            transition: all 0.3s;
+            width: 25%;
+        }
+        
+        /* Status bar */
+        .status-bar {
+            height: env(safe-area-inset-top);
+            background-color: #2c3e50;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+        }
+
+        /* Loading spinner */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 3px solid #4a6491;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="status-bar"></div>
+    <div class="safe-area-top"></div>
+    <div class="container">
+        <!-- Conteúdo da aba Adicionar -->
+        <div class="tab-content active" id="add-tab">
+            <div class="section">
+                <h2><i class="fas fa-plus-circle"></i> Adicionar Gasto</h2>
+                <div class="form-group">
+                    <label for="expenseDate">Data:</label>
+                    <input type="date" id="expenseDate">
+                </div>
+                <div class="form-group">
+                    <label for="expenseCategory">Categoria:</label>
+                    <select id="expenseCategory">
+                        <option value="Supermercado">Supermercado</option>
+                        <option value="Aluguel">Aluguel</option>
+                        <option value="Gasolina">Gasolina</option>
+                        <option value="Almoço/Jantar">Almoço/Jantar</option>
+                        <option value="Transporte">Transporte</option>
+                        <option value="Saúde">Saúde</option>
+                        <option value="Lazer">Lazer</option>
+                        <option value="Outros">Outros</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="expenseDescription">Descrição:</label>
+                    <input type="text" id="expenseDescription" placeholder="Ex: Compra no supermercado">
+                </div>
+                <div class="form-group">
+                    <label for="expenseValue">Valor (US$):</label>
+                    <input type="number" id="expenseValue" placeholder="0.00" step="0.01" min="0">
+                </div>
+                <button class="btn btn-success" id="addExpenseBtn">
+                    <span id="addExpenseText">Adicionar Gasto</span>
+                </button>
+            </div>
+            
+            <div class="section">
+                <h2><i class="fas fa-info-circle"></i> Como usar</h2>
+                <p>Preencha os dados do seu gasto e clique em "Adicionar Gasto".</p>
+                <p>Use as outras abas para ver seus gastos diários, histórico e definir limites.</p>
+                <p><strong>Dados salvos em nuvem!</strong> Acesse de qualquer dispositivo.</p>
+            </div>
+        </div>
+        
+        <!-- Conteúdo da aba Hoje -->
+        <div class="tab-content" id="today-tab">
+            <div class="section">
+                <h2><i class="fas fa-tachometer-alt"></i> Limite Diário</h2>
+                <div class="form-group">
+                    <label for="dailyLimit">Definir Limite Diário (US$):</label>
+                    <input type="number" id="dailyLimit" placeholder="0.00" step="0.01" min="0">
+                </div>
+                <button class="btn" id="setLimitBtn">
+                    <span id="setLimitText">Definir Limite</span>
+                </button>
+                
+                <div id="limitStatus" style="margin-top: 20px;">
+                    <div class="card limit-card" id="limitCard">
+                        <h3>Gasto Hoje</h3>
+                        <p id="todayExpenses">US$ 0.00</p>
+                        <p id="limitText">Limite: US$ 0.00</p>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress" id="limitProgress" style="width: 0%"></div>
+                    </div>
+                    <div class="progress-text" id="progressText">0% do limite</div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2><i class="fas fa-chart-pie"></i> Resumo de Hoje</h2>
+                <div class="summary-cards">
+                    <div class="card">
+                        <h3>Total de Gastos</h3>
+                        <p id="totalExpenses">US$ 0.00</p>
+                    </div>
+                    <div class="card">
+                        <h3>Maior Gasto</h3>
+                        <p id="highestExpense">US$ 0.00</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2><i class="fas fa-receipt"></i> Gastos de Hoje</h2>
+                <div class="table-container">
+                    <table id="todayExpensesTable">
+                        <thead>
+                            <tr>
+                                <th>Categoria</th>
+                                <th>Descrição</th>
+                                <th>Valor (US$)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="todayExpensesBody">
+                            <tr>
+                                <td colspan="3" style="text-align: center;">
+                                    <div class="empty-state">
+                                        <i class="fas fa-receipt"></i>
+                                        <p>Nenhum gasto hoje</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Conteúdo da aba Histórico -->
+        <div class="tab-content" id="history-tab">
+            <div class="section">
+                <h2><i class="fas fa-filter"></i> Filtros</h2>
+                <div class="form-group">
+                    <label for="monthFilter">Mês:</label>
+                    <select id="monthFilter">
+                        <option value="">Todos os meses</option>
+                        <option value="01">Janeiro</option>
+                        <option value="02">Fevereiro</option>
+                        <option value="03">Março</option>
+                        <option value="04">Abril</option>
+                        <option value="05">Maio</option>
+                        <option value="06">Junho</option>
+                        <option value="07">Julho</option>
+                        <option value="08">Agosto</option>
+                        <option value="09">Setembro</option>
+                        <option value="10">Outubro</option>
+                        <option value="11">Novembro</option>
+                        <option value="12">Dezembro</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="yearFilter">Ano:</label>
+                    <select id="yearFilter">
+                        <option value="">Todos os anos</option>
+                        <option value="2023">2023</option>
+                        <option value="2024">2024</option>
+                        <option value="2025">2025</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="categoryFilter">Categoria:</label>
+                    <select id="categoryFilter">
+                        <option value="">Todas as categorias</option>
+                        <option value="Supermercado">Supermercado</option>
+                        <option value="Aluguel">Aluguel</option>
+                        <option value="Gasolina">Gasolina</option>
+                        <option value="Almoço/Jantar">Almoço/Jantar</option>
+                        <option value="Transporte">Transporte</option>
+                        <option value="Saúde">Saúde</option>
+                        <option value="Lazer">Lazer</option>
+                        <option value="Outros">Outros</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2><i class="fas fa-history"></i> Histórico de Gastos</h2>
+                <div class="table-container">
+                    <table id="historyTable">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Categoria</th>
+                                <th>Descrição</th>
+                                <th>Valor (US$)</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyBody">
+                            <tr>
+                                <td colspan="5" style="text-align: center;">
+                                    <div class="empty-state">
+                                        <i class="fas fa-receipt"></i>
+                                        <p>Nenhum gasto registrado</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="actions">
+                    <button class="btn btn-danger" id="clearAllBtn">Limpar Tudo</button>
+                    <button class="btn" id="exportBtn">Exportar</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Conteúdo da aba Limites -->
+        <div class="tab-content" id="limits-tab">
+            <div class="section">
+                <h2><i class="fas fa-tachometer-alt"></i> Limites por Categoria</h2>
+                <p>Defina limites mensais para cada categoria de gastos:</p>
+                
+                <div class="form-group">
+                    <label for="supermarketLimit">Supermercado (US$):</label>
+                    <input type="number" id="supermarketLimit" placeholder="0.00" step="0.01" min="0">
+                </div>
+                
+                <div class="form-group">
+                    <label for="foodLimit">Almoço/Jantar (US$):</label>
+                    <input type="number" id="foodLimit" placeholder="0.00" step="0.01" min="0">
+                </div>
+                
+                <div class="form-group">
+                    <label for="transportLimit">Transporte (US$):</label>
+                    <input type="number" id="transportLimit" placeholder="0.00" step="0.01" min="0">
+                </div>
+                
+                <div class="form-group">
+                    <label for="leisureLimit">Lazer (US$):</label>
+                    <input type="number" id="leisureLimit" placeholder="0.00" step="0.01" min="0">
+                </div>
+                
+                <button class="btn" id="saveLimitsBtn">
+                    <span id="saveLimitsText">Salvar Limites</span>
+                </button>
+            </div>
+            
+            <div class="section">
+                <h2><i class="fas fa-chart-pie"></i> Resumo dos Limites</h2>
+                <div id="limitsSummary">
+                    <p>Nenhum limite definido ainda.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Barra de navegação inferior -->
+    <div class="tabs">
+        <div class="tab-indicator" id="tabIndicator"></div>
+        <div class="tab active" data-tab="add">
+            <i class="fas fa-plus-circle"></i>
+            <span class="tab-text">Adicionar</span>
+        </div>
+        <div class="tab" data-tab="today">
+            <i class="fas fa-chart-pie"></i>
+            <span class="tab-text">Hoje</span>
+        </div>
+        <div class="tab" data-tab="history">
+            <i class="fas fa-receipt"></i>
+            <span class="tab-text">Histórico</span>
+        </div>
+        <div class="tab" data-tab="limits">
+            <i class="fas fa-tachometer-alt"></i>
+            <span class="tab-text">Limites</span>
+        </div>
+    </div>
+    
+    <div class="safe-area-bottom"></div>
+    
+    <div class="toast" id="toast"></div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Configuração do Firebase com suas credenciais
+  const firebaseConfig = {
+    apiKey: "AIzaSyBtURXiT2k7n-bYz7EnsMs4H9cjCuhz8yA",
+    authDomain: "controle-gastos-tablet.firebaseapp.com",
+    projectId: "controle-gastos-tablet",
+    storageBucket: "controle-gastos-tablet.firebasestorage.app",
+    messagingSenderId: "522746241765",
+    appId: "1:522746241765:web:eeb783159c8e599c01ea0c"
+  };
+
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // Elementos da interface
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const tabIndicator = document.getElementById('tabIndicator');
+        
+        const expenseDate = document.getElementById('expenseDate');
+        const expenseCategory = document.getElementById('expenseCategory');
+        const expenseDescription = document.getElementById('expenseDescription');
+        const expenseValue = document.getElementById('expenseValue');
+        const addExpenseBtn = document.getElementById('addExpenseBtn');
+        const addExpenseText = document.getElementById('addExpenseText');
+        const dailyLimit = document.getElementById('dailyLimit');
+        const setLimitBtn = document.getElementById('setLimitBtn');
+        const setLimitText = document.getElementById('setLimitText');
+        const monthFilter = document.getElementById('monthFilter');
+        const yearFilter = document.getElementById('yearFilter');
+        const categoryFilter = document.getElementById('categoryFilter');
+        const clearAllBtn = document.getElementById('clearAllBtn');
+        const exportBtn = document.getElementById('exportBtn');
+        const saveLimitsBtn = document.getElementById('saveLimitsBtn');
+        const saveLimitsText = document.getElementById('saveLimitsText');
+        
+        const todayExpensesBody = document.getElementById('todayExpensesBody');
+        const historyBody = document.getElementById('historyBody');
+        
+        const totalExpensesElement = document.getElementById('totalExpenses');
+        const highestExpenseElement = document.getElementById('highestExpense');
+        const todayExpensesElement = document.getElementById('todayExpenses');
+        const limitTextElement = document.getElementById('limitText');
+        const limitProgressElement = document.getElementById('limitProgress');
+        const progressTextElement = document.getElementById('progressText');
+        const limitCardElement = document.getElementById('limitCard');
+        
+        let expensesData = [];
+        let dailyLimitValue = 0;
+        let categoryLimits = {};
+        
+        // Inicializar data atual
+        const today = new Date();
+        const todayFormatted = today.toISOString().split('T')[0];
+        expenseDate.value = todayFormatted;
+        
+        // Configurar ano atual no filtro
+        const currentYear = today.getFullYear().toString();
+        const yearOptions = document.querySelectorAll('#yearFilter option');
+        let yearExists = false;
+        
+        yearOptions.forEach(option => {
+            if (option.value === currentYear) {
+                option.selected = true;
+                yearExists = true;
+            }
+        });
+        
+        if (!yearExists) {
+            const newOption = document.createElement('option');
+            newOption.value = currentYear;
+            newOption.textContent = currentYear;
+            yearFilter.appendChild(newOption);
+            newOption.selected = true;
+        }
+        
+        // Event Listeners para abas
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabId = tab.getAttribute('data-tab');
+                tabs.forEach(t => t.classList.remove('active'));
+                tabContents.forEach(tc => tc.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById(`${tabId}-tab`).classList.add('active');
+                updateTabIndicator();
+            });
+        });
+        
+        // Atualizar indicador de aba ativa
+        function updateTabIndicator() {
+            const activeTab = document.querySelector('.tab.active');
+            const tabWidth = 100 / tabs.length;
+            const activeIndex = Array.from(tabs).indexOf(activeTab);
+            tabIndicator.style.width = `${tabWidth}%`;
+            tabIndicator.style.left = `${activeIndex * tabWidth}%`;
+        }
+        
+        // Event Listeners para funcionalidades
+        addExpenseBtn.addEventListener('click', addExpense);
+        setLimitBtn.addEventListener('click', setDailyLimit);
+        monthFilter.addEventListener('change', updateUI);
+        yearFilter.addEventListener('change', updateUI);
+        categoryFilter.addEventListener('change', updateUI);
+        clearAllBtn.addEventListener('click', clearAllData);
+        exportBtn.addEventListener('click', exportData);
+        saveLimitsBtn.addEventListener('click', saveCategoryLimits);
+        
+        // ===== FUNÇÕES DO FIREBASE =====
+        
+        // Carregar dados do Firestore
+        async function loadFromFirestore() {
+            try {
+                showLoading(addExpenseText, 'Carregando...');
+                
+                // Carregar gastos
+                const expensesSnapshot = await db.collection('expenses').orderBy('date', 'desc').get();
+                expensesData = [];
+                expensesSnapshot.forEach(doc => {
+                    expensesData.push({ id: doc.id, ...doc.data() });
+                });
+                
+                // Carregar limites
+                const limitDoc = await db.collection('settings').doc('limits').get();
+                if (limitDoc.exists) {
+                    const data = limitDoc.data();
+                    dailyLimitValue = data.dailyLimit || 0;
+                    categoryLimits = data.categoryLimits || {};
+                    
+                    dailyLimit.value = dailyLimitValue;
+                    document.getElementById('supermarketLimit').value = categoryLimits.Supermercado || '';
+                    document.getElementById('foodLimit').value = categoryLimits['Almoço/Jantar'] || '';
+                    document.getElementById('transportLimit').value = categoryLimits.Transporte || '';
+                    document.getElementById('leisureLimit').value = categoryLimits.Lazer || '';
+                }
+                
+                hideLoading(addExpenseText, 'Adicionar Gasto');
+                showToast('Dados carregados com sucesso!');
+            } catch (error) {
+                console.error('Erro ao carregar dados:', error);
+                hideLoading(addExpenseText, 'Adicionar Gasto');
+                showToast('Erro ao carregar dados. Verifique sua conexão.');
+            }
+        }
+        
+        // Adicionar gasto
+        async function addExpense() {
+            const date = expenseDate.value;
+            const category = expenseCategory.value;
+            const description = expenseDescription.value.trim();
+            let valueStr = expenseValue.value.replace(',', '.');
+            const value = parseFloat(valueStr);
+            
+            if (!date || !category || !description || isNaN(value) || value <= 0) {
+                showToast('Por favor, preencha todos os campos corretamente.');
+                return;
+            }
+            
+            try {
+                showLoading(addExpenseText, 'Salvando...');
+                
+                const docRef = await db.collection('expenses').add({
+                    date: date,
+                    category: category,
+                    description: description,
+                    value: value,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                const expense = {
+                    id: docRef.id,
+                    date: date,
+                    category: category,
+                    description: description,
+                    value: value
+                };
+                
+                expensesData.push(expense);
+                updateUI();
+                
+                expenseDescription.value = '';
+                expenseValue.value = '';
+                expenseDate.value = todayFormatted;
+                
+                hideLoading(addExpenseText, 'Adicionar Gasto');
+                showToast('Gasto adicionado com sucesso!');
+                expenseDescription.focus();
+            } catch (error) {
+                console.error('Erro ao adicionar gasto:', error);
+                hideLoading(addExpenseText, 'Adicionar Gasto');
+                showToast('Erro ao salvar gasto. Verifique sua conexão.');
+            }
+        }
+        
+        // Definir limite diário
+        async function setDailyLimit() {
+            const limit = parseFloat(dailyLimit.value.replace(',', '.'));
+            if (isNaN(limit) || limit <= 0) {
+                showToast('Por favor, informe um valor válido para o limite diário.');
+                return;
+            }
+            
+            try {
+                showLoading(setLimitText, 'Salvando...');
+                
+                await db.collection('settings').doc('limits').set({
+                    dailyLimit: limit,
+                    categoryLimits: categoryLimits,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
+                
+                dailyLimitValue = limit;
+                updateLimitUI();
+                
+                hideLoading(setLimitText, 'Definir Limite');
+                showToast('Limite diário definido com sucesso!');
+            } catch (error) {
+                console.error('Erro ao salvar limite:', error);
+                hideLoading(setLimitText, 'Definir Limite');
+                showToast('Erro ao salvar limite. Verifique sua conexão.');
+            }
+        }
+        
+        // Salvar limites por categoria
+        async function saveCategoryLimits() {
+            categoryLimits = {
+                Supermercado: parseFloat(document.getElementById('supermarketLimit').value.replace(',', '.')) || 0,
+                'Almoço/Jantar': parseFloat(document.getElementById('foodLimit').value.replace(',', '.')) || 0,
+                Transporte: parseFloat(document.getElementById('transportLimit').value.replace(',', '.')) || 0,
+                Lazer: parseFloat(document.getElementById('leisureLimit').value.replace(',', '.')) || 0
+            };
+            
+            try {
+                showLoading(saveLimitsText, 'Salvando...');
+                
+                await db.collection('settings').doc('limits').set({
+                    dailyLimit: dailyLimitValue,
+                    categoryLimits: categoryLimits,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
+                
+                updateLimitsSummary();
+                
+                hideLoading(saveLimitsText, 'Salvar Limites');
+                showToast('Limites por categoria salvos com sucesso!');
+            } catch (error) {
+                console.error('Erro ao salvar limites:', error);
+                hideLoading(saveLimitsText, 'Salvar Limites');
+                showToast('Erro ao salvar limites. Verifique sua conexão.');
+            }
+        }
+        
+        // Deletar gasto
+        async function deleteExpense(id) {
+            if (confirm('Tem certeza que deseja excluir este gasto?')) {
+                try {
+                    await db.collection('expenses').doc(id).delete();
+                    expensesData = expensesData.filter(expense => expense.id !== id);
+                    updateUI();
+                    showToast('Gasto excluído com sucesso!');
+                } catch (error) {
+                    console.error('Erro ao excluir gasto:', error);
+                    showToast('Erro ao excluir gasto. Verifique sua conexão.');
+                }
+            }
+        }
+        
+        // Limpar todos os dados
+        async function clearAllData() {
+            if (confirm('Tem certeza que deseja limpar todos os dados? Esta ação não pode ser desfeita.')) {
+                try {
+                    showToast('Limpando dados...');
+                    
+                    // Deletar todos os gastos
+                    const batch = db.batch();
+                    const expensesSnapshot = await db.collection('expenses').get();
+                    expensesSnapshot.forEach(doc => {
+                        batch.delete(doc.ref);
+                    });
+                    await batch.commit();
+                    
+                    // Limpar limites
+                    await db.collection('settings').doc('limits').delete();
+                    
+                    expensesData = [];
+                    dailyLimitValue = 0;
+                    dailyLimit.value = '';
+                    categoryLimits = {};
+                    
+                    document.getElementById('supermarketLimit').value = '';
+                    document.getElementById('foodLimit').value = '';
+                    document.getElementById('transportLimit').value = '';
+                    document.getElementById('leisureLimit').value = '';
+                    
+                    updateUI();
+                    showToast('Todos os dados foram limpos!');
+                } catch (error) {
+                    console.error('Erro ao limpar dados:', error);
+                    showToast('Erro ao limpar dados. Verifique sua conexão.');
+                }
+            }
+        }
+        
+        // ===== FUNÇÕES DE UI =====
+        
+        function updateUI() {
+            updateTodayExpenses();
+            updateHistoryTable();
+            updateSummary();
+            updateLimitUI();
+            updateLimitsSummary();
+        }
+        
+        function updateTodayExpenses() {
+            const todayExpenses = expensesData.filter(expense => expense.date === todayFormatted);
+            todayExpensesBody.innerHTML = '';
+            if (todayExpenses.length === 0) {
+                todayExpensesBody.innerHTML = `
+                    <tr>
+                        <td colspan="3" style="text-align: center;">
+                            <div class="empty-state">
+                                <i class="fas fa-receipt"></i>
+                                <p>Nenhum gasto hoje</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            } else {
+                todayExpenses.forEach(expense => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${expense.category}</td>
+                        <td>${expense.description}</td>
+                        <td class="negative">US$ ${expense.value.toFixed(2)}</td>
+                    `;
+                    todayExpensesBody.appendChild(row);
+                });
+            }
+        }
+        
+        function updateHistoryTable() {
+            const month = monthFilter.value;
+            const year = yearFilter.value;
+            const category = categoryFilter.value;
+            let filteredData = [...expensesData];
+            if (month) {
+                filteredData = filteredData.filter(expense => expense.date.split('-')[1] === month);
+            }
+            if (year) {
+                filteredData = filteredData.filter(expense => expense.date.split('-')[0] === year);
+            }
+            if (category) {
+                filteredData = filteredData.filter(expense => expense.category === category);
+            }
+            filteredData.sort((a, b) => new Date(b.date) - new Date(a.date));
+            historyBody.innerHTML = '';
+            if (filteredData.length === 0) {
+                historyBody.innerHTML = `
+                    <tr>
+                        <td colspan="5" style="text-align: center;">
+                            <div class="empty-state">
+                                <i class="fas fa-receipt"></i>
+                                <p>Nenhum gasto encontrado</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            } else {
+                filteredData.forEach(expense => {
+                    const row = document.createElement('tr');
+                    const dateObj = new Date(expense.date);
+                    const formattedDate = dateObj.toLocaleDateString('pt-BR');
+                    row.innerHTML = `
+                        <td>${formattedDate}</td>
+                        <td>${expense.category}</td>
+                        <td>${expense.description}</td>
+                        <td class="negative">US$ ${expense.value.toFixed(2)}</td>
+                        <td>
+                            <button class="btn btn-danger btn-small" onclick="deleteExpense('${expense.id}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    `;
+                    historyBody.appendChild(row);
+                });
+            }
+        }
+        
+        function updateSummary() {
+            const todayExpenses = expensesData.filter(expense => expense.date === todayFormatted);
+            const total = todayExpenses.reduce((sum, expense) => sum + expense.value, 0);
+            const highest = todayExpenses.length > 0 ? Math.max(...todayExpenses.map(expense => expense.value)) : 0;
+            totalExpensesElement.textContent = `US$ ${total.toFixed(2)}`;
+            highestExpenseElement.textContent = `US$ ${highest.toFixed(2)}`;
+        }
+        
+        function updateLimitUI() {
+            const todayExpenses = expensesData
+                .filter(expense => expense.date === todayFormatted)
+                .reduce((sum, expense) => sum + expense.value, 0);
+            todayExpensesElement.textContent = `US$ ${todayExpenses.toFixed(2)}`;
+            limitTextElement.textContent = `Limite: US$ ${dailyLimitValue.toFixed(2)}`;
+            let percentage = 0;
+            if (dailyLimitValue > 0) {
+                percentage = (todayExpenses / dailyLimitValue) * 100;
+                percentage = Math.min(percentage, 100);
+            }
+            limitProgressElement.style.width = `${percentage}%`;
+            progressTextElement.textContent = `${percentage.toFixed(0)}% do limite`;
+            if (percentage >= 100) {
+                limitProgressElement.className = 'progress danger';
+                limitCardElement.className = 'card limit-card';
+            } else if (percentage >= 80) {
+                limitProgressElement.className = 'progress warning';
+                limitCardElement.className = 'card limit-card warning';
+            } else {
+                limitProgressElement.className = 'progress';
+                limitCardElement.className = 'card limit-card good';
+            }
+        }
+        
+        function updateLimitsSummary() {
+            const limitsSummary = document.getElementById('limitsSummary');
+            if (Object.keys(categoryLimits).length === 0) {
+                limitsSummary.innerHTML = '<p>Nenhum limite definido ainda.</p>';
+                return;
+            }
+            let html = '';
+            for (const [category, limit] of Object.entries(categoryLimits)) {
+                if (limit > 0) {
+                    const currentMonth = new Date().getMonth() + 1;
+                    const monthStr = currentMonth.toString().padStart(2, '0');
+                    const currentYear = new Date().getFullYear().toString();
+                    const monthlyExpenses = expensesData
+                        .filter(expense => {
+                            const expenseDate = new Date(expense.date);
+                            return expenseDate.getMonth() + 1 === currentMonth && 
+                                   expenseDate.getFullYear().toString() === currentYear &&
+                                   expense.category === category;
+                        })
+                        .reduce((sum, expense) => sum + expense.value, 0);
+                    const percentage = (monthlyExpenses / limit) * 100;
+                    html += `
+                        <div style="margin-bottom: 15px;">
+                            <p><strong>${category}:</strong> US$ ${monthlyExpenses.toFixed(2)} / US$ ${limit.toFixed(2)}</p>
+                            <div class="progress-bar">
+                                <div class="progress ${percentage >= 100 ? 'danger' : percentage >= 80 ? 'warning' : ''}" style="width: ${Math.min(percentage, 100)}%"></div>
+                            </div>
+                            <div class="progress-text">${percentage.toFixed(0)}% do limite</div>
+                        </div>
+                    `;
+                }
+            }
+            limitsSummary.innerHTML = html || '<p>Nenhum limite definido ainda.</p>';
+        }
+        
+        function exportData() {
+            if (expensesData.length === 0) {
+                showToast('Não há dados para exportar.');
+                return;
+            }
+            let csvContent = "Data;Categoria;Descrição;Valor\n";
+            expensesData.forEach(expense => {
+                csvContent += `"${expense.date}";"${expense.category}";"${expense.description}";${expense.value.toFixed(2)}\n`;
+            });
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            const date = new Date().toISOString().split('T')[0];
+            link.setAttribute("href", url);
+            link.setAttribute("download", `gastos_${date}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast('Dados exportados com sucesso!');
+        }
+        
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.style.opacity = '1';
+            setTimeout(() => {
+                toast.style.opacity = '0';
+            }, 3000);
+        }
+        
+        function showLoading(element, text) {
+            element.innerHTML = `<span class="loading"></span>${text}`;
+            element.parentElement.disabled = true;
+        }
+        
+        function hideLoading(element, text) {
+            element.innerHTML = text;
+            element.parentElement.disabled = false;
+        }
+        
+        // Inicializar aplicação
+        loadFromFirestore().then(() => {
+            updateUI();
+            updateTabIndicator();
+        });
+        
+        // Tornar funções globais
+        window.deleteExpense = deleteExpense;
+    });
+    </script>
+</body>
+</html>
