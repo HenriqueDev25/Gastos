@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Gastos</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+            overflow-x: hidden;
+            padding-bottom: 70px; /* Espaço para a barra de navegação */
+        }
+        
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 0;
+        }
+        
+        /* Abas de navegação */
+        .tabs {
+            display: flex;
+            background: white;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            padding: 5px 0;
+            height: 60px;
+        }
+        
+        .tab {
+            flex: 1;
+            text-align: center;
+            padding: 8px 0;
+            font-weight: 600;
+            color: #7f8c8d;
+            transition: all 0.3s;
+            cursor: pointer;
+            font-size: 0.75rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .tab.active {
+            color: #4a6491;
+        }
+        
+        .tab i {
+            font-size: 1.2rem;
+            margin-bottom: 3px;
+        }
+        
+        /* Conteúdo das abas */
+        .tab-content {
+            display: none;
+            padding: 15px;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .section {
+            background: white;
+            padding: 18px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+            margin-bottom: 18px;
+        }
+        
+        h2 {
+            margin-bottom: 16px;
+            color: #2c3e50;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        h2 i {
+            color: #4a6491;
+            font-size: 1.1rem;
+        }
+        
+        .form-group {
+            margin-bottom: 14px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 0.9rem;
+        }
+        
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 14px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            -webkit-appearance: none;
+        }
+        
+        .btn {
+            display: block;
+            width: 100%;
+            background: #4a6491;
+            color: white;
+            padding: 16px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: background 0.3s;
+            text-align: center;
+        }
+        
+        .btn:active {
+            background: #2c3e50;
+            transform: scale(0.98);
+        }
+        
+        .btn-success {
+            background: #2ecc71;
+        }
+        
+        .btn-success:active {
+            background: #27ae60;
+        }
+        
+        .btn-danger {
+            background: #e74c3c;
+        }
+        
+        .btn-danger:active {
+            background: #c0392b;
+        }
+
+        .btn-excel {
+            background: #1d6f42;
+        }
+        
+        .btn-excel:active {
+            background: #165a34;
+        }
+        
+        .summary-cards {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+        
+        .card {
+            background: linear-gradient(135deg, #4a6491, #2c3e50);
+            color: white;
+            padding: 16px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        
+        .card h3 {
+            font-size: 0.9rem;
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+        
+        .card p {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        
+        .limit-card {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+        
+        .limit-card.good {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+        }
+        
+        .limit-card.warning {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+        }
+        
+        .progress-bar {
+            height: 18px;
+            background-color: #ecf0f1;
+            border-radius: 10px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+        
+        .progress {
+            height: 100%;
+            background-color: #2ecc71;
+            border-radius: 10px;
+            transition: width 0.3s;
+        }
+        
+        .progress.warning {
+            background-color: #f39c12;
+        }
+        
+        .progress.danger {
+            background-color: #e74c3c;
+        }
+        
+        .progress-text {
+            text-align: center;
+            font-weight: 600;
+            margin-top: 5px;
+            font-size: 0.85rem;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+            font-size: 0.85rem;
+        }
+        
+        th, td {
+            padding: 12px 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background-color: #4a6491;
+            color: white;
+            position: sticky;
+            top: 0;
+            font-size: 0.8rem;
+        }
+        
+        tr:last-child td {
+            border-bottom: none;
+        }
+        
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            max-height: 400px;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .negative {
+            color: #e74c3c;
+            font-weight: 600;
+        }
+        
+        .positive {
+            color: #2ecc71;
+            font-weight: 600;
+        }
+        
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 18px;
+        }
+        
+        .actions button {
+            flex: 1;
+            padding: 12px;
+            font-size: 0.9rem;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 25px 0;
+            color: #7f8c8d;
+        }
+        
+        .empty-state i {
+            font-size: 2.5rem;
+            margin-bottom: 12px;
+            color: #bdc3c7;
+        }
+        
+        .empty-state p {
+            font-size: 1rem;
+        }
+        
+        /* Safe areas para iPhone */
+        .safe-area-top {
+            padding-top: env(safe-area-inset-top);
+            background: #2c3e50;
+            height: env(safe-area-inset-top);
+        }
+        
+        .safe-area-bottom {
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #333;
+            color: white;
+            padding: 14px 18px;
+            border-radius: 10px;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.85rem;
+            max-width: 80%;
+            text-align: center;
+        }
+        
+        /* Estilo para botões pequenos */
+        .btn-small {
+            padding: 6px 10px;
+            font-size: 0.75rem;
+        }
+
+        /* Filtros de exportação */
+        .export-filters {
+            background: #f8f9fa;
+            padding: 14px;
+            border-radius: 8px;
+            margin-bottom: 14px;
+            border: 1px solid #e9ecef;
+        }
+
+        .export-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .export-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .export-option input {
+            width: auto;
+        }
+
+        .export-option label {
+            margin: 0;
+            font-weight: normal;
+        }
+
+        /* Indicador de aba ativa */
+        .tab-indicator {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 3px;
+            background-color: #4a6491;
+            transition: all 0.3s;
+            width: 25%;
+        }
+
+        /* Status bar */
+        .status-bar {
+            height: env(safe-area-inset-top);
+            background-color: #2c3e50;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+        }
+
+        /* Ajuste para dispositivos com notch */
+        @media screen and (max-height: 700px) {
+            .tab {
+                padding: 6px 0;
+                font-size: 0.7rem;
+            }
+            
+            .tab i {
+                font-size: 1.1rem;
+            }
+            
+            .section {
+                padding: 14px;
+            }
+            
+            .form-group input, .form-group select {
+                padding: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="status-bar"></div>
+    <div class="safe-area-top"></div>
+    <div class="container">
+        <!-- Conteúdo da aba Adicionar -->
+        <div class="tab-content active" id="add-tab">
+            <div class="section">
+                <h2><i class="fas fa-plus-circle"></i> Adicionar Gasto</h2>
+                <div class="form-group">
+                    <label for="expenseDate">Data:</label>
+                    <input type="date" id="expenseDate">
+                </div>
+                <div class="form-group">
+                    <label for="expenseCategory">Categoria:</label>
+                    <select id="expenseCategory">
+                        <option value="Supermercado">Supermercado</option>
+                        <option value="Aluguel">Aluguel</option>
+                        <option value="Gasolina">Gasolina</option>
+                        <option value="Almoço/Jantar">Almoço/Jantar</option>
+                        <option value="Transporte">Transporte</option>
+                        <option value="Saúde">Saúde</option>
+                        <option value="Lazer">Lazer</option>
+                        <option value="Outros">Outros</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="expenseDescription">Descrição:</label>
+                    <input type="text" id="expenseDescription" placeholder="Ex: Compra no supermercado">
+                </div>
+                <div class="form-group">
+                    <label for="expenseValue">Valor (R$):</label>
+                    <input type="number" id="expenseValue" placeholder="0,00" step="0.01" min="0">
+                </div>
+                <button class="btn btn-success" id="addExpenseBtn">Adicionar Gasto</button>
+            </div>
+            
+            <div class="section">
+                <h2><i class="fas fa-info-circle"></i> Como usar</h2>
+                <p>Preencha os dados do seu gasto e clique em "Adicionar Gasto".</p>
+                <p>Use as outras abas para ver seus gastos diários, histórico e definir limites.</p>
+            </div>
+        </div>
+        
+        <!-- Conteúdo da aba Hoje -->
+        <div class="tab-content" id="today-tab">
+            <div class="section">
+                <h2><i class="fas fa-tachometer-alt"></i> Limite Diário</h2>
+                <div class="form-group">
+                    <label for="dailyLimit">Definir Limite Diário (R$):</label>
+                    <input type="number" id="dailyLimit" placeholder="0,00" step="0.01" min="0">
+                </div>
+                <button class="btn" id="setLimitBtn">Definir Limite</button>
+                
+                <div id="limitStatus" style="margin-top: 18px;">
+                    <div class="card limit-card" id="limitCard">
+                        <h3>Gasto Hoje</h3>
+                        <p id="todayExpenses">R$ 0,00</p>
+                        <p id="limitText">Limite: R$ 0,00</p>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress" id="limitProgress" style="width: 0%"></div>
+                    </div>
+                    <div class="progress-text" id="progressText">0% do limite</div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2><i class="fas fa-chart-pie"></i> Resumo de Hoje</h2>
+                <div class="summary-cards">
+                    <div class="card">
+                        <h3>Total de Gastos</h3>
+                        <p id="totalExpenses">R$ 0,00</p>
+                    </div>
+                    <div class="card">
+                        <h3>Maior Gasto</h3>
+                        <p id="highestExpense">R$ 0,00</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2><i class="fas fa-receipt"></i> Gastos de Hoje</h2>
+                <div class="table-container">
+                    <table id="todayExpensesTable">
+                        <thead>
+                            <tr>
+                                <th>Categoria</th>
+                                <th>Descrição</th>
+                                <th>Valor (R$)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="todayExpensesBody">
+                            <tr>
+                                <td colspan="3" style="text-align: center;">
+                                    <div class="empty-state">
+                                        <i class="fas fa-receipt"></i>
+                                        <p>Nenhum gasto hoje</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Conteúdo da aba Histórico -->
+        <div class="tab-content" id="history-tab">
+            <div class="section">
+                <h2><i class="fas fa-filter"></i> Filtros</h2>
+                <div class="form-group">
+                    <label for="monthFilter">Mês:</label>
+                    <select id="monthFilter">
+                        <option value="">Todos os meses</option>
+                        <option value="01">Janeiro</option>
+                        <option value="02">Fevereiro</option>
+                        <option value="03">Março</option>
+                        <option value="04">Abril</option>
+                        <option value="05">Maio</option>
+                        <option value="06">Junho</option>
+                        <option value="07">Julho</option>
+                        <option value="08">Agosto</option>
+                        <option value="09">Setembro</option>
+                        <option value="10">Outubro</option>
+                        <option value="11">Novembro</option>
+                        <option value="12">Dezembro</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="yearFilter">Ano:</label>
+                    <select id="yearFilter">
+                        <option value="">Todos os anos</option>
+                        <option value="2023">2023</option>
+                        <option value="2024">2024</option>
+                        <option value="2025">2025</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="categoryFilter">Categoria:</label>
+                    <select id="categoryFilter">
+                        <option value="">Todas as categorias</option>
+                        <option value="Supermercado">Supermercado</option>
+                        <option value="Aluguel">Aluguel</option>
+                        <option value="Gasolina">Gasolina</option>
+                        <option value="Almoço/Jantar">Almoço/Jantar</option>
+                        <option value="Transporte">Transporte</option>
+                        <option value="Saúde">Saúde</option>
+                        <option value="Lazer">Lazer</option>
+                        <option value="Outros">Outros</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2><i class="fas fa-file-export"></i> Exportar para Excel</h2>
+                <div class="export-filters">
+                    <h3 style="margin-bottom: 12px;">Opções de Exportação</h3>
+                    <div class="export-options">
+                        <div class="export-option">
+                            <input type="radio" id="exportAll" name="exportOption" value="all" checked>
+                            <label for="exportAll">Exportar todos os dados</label>
+                        </div>
+                        <div class="export-option">
+                            <input type="radio" id="exportFiltered" name="exportOption" value="filtered">
+                            <label for="exportFiltered">Exportar dados filtrados</label>
+                        </div>
+                        <div class="export-option">
+                            <input type="checkbox" id="includeCharts" checked>
+                            <label for="includeCharts">Incluir gráficos e resumos</label>
+                        </div>
+                    </div>
+                </div>
+                <button class="btn btn-excel" id="exportExcelBtn">
+                    <i class="fas fa-file-excel"></i> Exportar para Excel
+                </button>
+            </div>
+            
+            <div class="section">
+                <h2><i class="fas fa-history"></i> Histórico de Gastos</h2>
+                <div class="table-container">
+                    <table id="historyTable">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Categoria</th>
+                                <th>Descrição</th>
+                                <th>Valor (R$)</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyBody">
+                            <tr>
+                                <td colspan="5" style="text-align: center;">
+                                    <div class="empty-state">
+                                        <i class="fas fa-receipt"></i>
+                                        <p>Nenhum gasto registrado</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="actions">
+                    <button class="btn btn-danger" id="clearAllBtn">Limpar Tudo</button>
+                    <button class="btn" id="exportBtn">Exportar CSV</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Conteúdo da aba Limites -->
+        <div class="tab-content" id="limits-tab">
+            <div class="section">
+                <h2><i class="fas fa-tachometer-alt"></i> Limites por Categoria</h2>
+                <p>Defina limites mensais para cada categoria de gastos:</p>
+                
+                <div class="form-group">
+                    <label for="supermarketLimit">Supermercado (R$):</label>
+                    <input type="number" id="supermarketLimit" placeholder="0,00" step="0.01" min="0">
+                </div>
+                
+                <div class="form-group">
+                    <label for="foodLimit">Almoço/Jantar (R$):</label>
+                    <input type="number" id="foodLimit" placeholder="0,00" step="0.01" min="0">
+                </div>
+                
+                <div class="form-group">
+                    <label for="transportLimit">Transporte (R$):</label>
+                    <input type="number" id="transportLimit" placeholder="0,00" step="0.01" min="0">
+                </div>
+                
+                <div class="form-group">
+                    <label for="leisureLimit">Lazer (R$):</label>
+                    <input type="number" id="leisureLimit" placeholder="0,00" step="0.01" min="0">
+                </div>
+                
+                <button class="btn" id="saveLimitsBtn">Salvar Limites</button>
+            </div>
+            
+            <div class="section">
+                <h2><i class="fas fa-chart-pie"></i> Resumo dos Limites</h2>
+                <div id="limitsSummary">
+                    <p>Nenhum limite definido ainda.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Barra de navegação inferior -->
+    <div class="tabs">
+        <div class="tab-indicator" id="tabIndicator"></div>
+        <div class="tab active" data-tab="add">
+            <i class="fas fa-plus-circle"></i>
+            <span class="tab-text">Adicionar</span>
+        </div>
+        <div class="tab" data-tab="today">
+            <i class="fas fa-chart-pie"></i>
+            <span class="tab-text">Hoje</span>
+        </div>
+        <div class="tab" data-tab="history">
+            <i class="fas fa-receipt"></i>
+            <span class="tab-text">Histórico</span>
+        </div>
+        <div class="tab" data-tab="limits">
+            <i class="fas fa-tachometer-alt"></i>
+            <span class="tab-text">Limites</span>
+        </div>
+    </div>
+    
+    <div class="safe-area-bottom"></div>
+    
+    <div class="toast" id="toast"></div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+            // Elementos da interface
+            const tabs = document.querySelectorAll('.tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+            const tabIndicator = document.getElementById('tabIndicator');
+            
+            const expenseDate = document.getElementById('expenseDate');
+            const expenseCategory = document.getElementById('expenseCategory');
+            const expenseDescription = document.getElementById('expenseDescription');
+            const expenseValue = document.getElementById('expenseValue');
+            const addExpenseBtn = document.getElementById('addExpenseBtn');
+            const dailyLimit = document.getElementById('dailyLimit');
+            const setLimitBtn = document.getElementById('setLimitBtn');
+            const monthFilter = document.getElementById('monthFilter');
+            const yearFilter = document.getElementById('yearFilter');
+            const categoryFilter = document.getElementById('categoryFilter');
+            const clearAllBtn = document.getElementById('clearAllBtn');
+            const exportBtn = document.getElementById('exportBtn');
+            const saveLimitsBtn = document.getElementById('saveLimitsBtn');
+            const exportExcelBtn = document.getElementById('exportExcelBtn');
+            
+            const todayExpensesBody = document.getElementById('todayExpensesBody');
+            const historyBody = document.getElementById('historyBody');
+            
+            const totalExpensesElement = document.getElementById('totalExpenses');
+            const highestExpenseElement = document.getElementById('highestExpense');
+            const todayExpensesElement = document.getElementById('todayExpenses');
+            const limitTextElement = document.getElementById('limitText');
+            const limitProgressElement = document.getElementById('limitProgress');
+            const progressTextElement = document.getElementById('progressText');
+            const limitCardElement = document.getElementById('limitCard');
+            
+            let expensesData = [];
+            let dailyLimitValue = 0;
+            let categoryLimits = {};
+            
+            // Inicializar data atual
+            const today = new Date();
+            const todayFormatted = today.toISOString().split('T')[0];
+            expenseDate.value = todayFormatted;
+            
+            // Configurar ano atual no filtro
+            const currentYear = today.getFullYear().toString();
+            const yearOptions = document.querySelectorAll('#yearFilter option');
+            let yearExists = false;
+            
+            yearOptions.forEach(option => {
+                if (option.value === currentYear) {
+                    option.selected = true;
+                    yearExists = true;
+                }
+            });
+            
+            if (!yearExists) {
+                // Adicionar o ano atual se não existir
+                const newOption = document.createElement('option');
+                newOption.value = currentYear;
+                newOption.textContent = currentYear;
+                yearFilter.appendChild(newOption);
+                newOption.selected = true;
+            }
+            
+            // Carregar dados do localStorage
+            loadFromLocalStorage();
+            updateUI();
+            updateTabIndicator();
+            
+            // Event Listeners para abas
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const tabId = tab.getAttribute('data-tab');
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tabContents.forEach(tc => tc.classList.remove('active'));
+                    tab.classList.add('active');
+                    document.getElementById(`${tabId}-tab`).classList.add('active');
+                    updateTabIndicator();
+                });
+            });
+            
+            // Atualizar indicador de aba ativa
+            function updateTabIndicator() {
+                const activeTab = document.querySelector('.tab.active');
+                const tabWidth = 100 / tabs.length;
+                const activeIndex = Array.from(tabs).indexOf(activeTab);
+                tabIndicator.style.width = `${tabWidth}%`;
+                tabIndicator.style.left = `${activeIndex * tabWidth}%`;
+            }
+            
+            // Event Listeners para funcionalidades
+            addExpenseBtn.addEventListener('click', addExpense);
+            setLimitBtn.addEventListener('click', setDailyLimit);
+            monthFilter.addEventListener('change', updateUI);
+            yearFilter.addEventListener('change', updateUI);
+            categoryFilter.addEventListener('change', updateUI);
+            clearAllBtn.addEventListener('click', clearAllData);
+            exportBtn.addEventListener('click', exportData);
+            saveLimitsBtn.addEventListener('click', saveCategoryLimits);
+            exportExcelBtn.addEventListener('click', exportToExcel);
+            
+            // Função para adicionar gasto
+            function addExpense() {
+                const date = expenseDate.value;
+                const category = expenseCategory.value;
+                const description = expenseDescription.value.trim();
+                // Aceita vírgula ou ponto como separador decimal
+                let valueStr = expenseValue.value.replace(',', '.');
+                const value = parseFloat(valueStr);
+                
+                if (!date || !category || !description || isNaN(value) || value <= 0) {
+                    showToast('Por favor, preencha todos os campos corretamente.');
+                    return;
+                }
+                
+                const expense = {
+                    id: Date.now(), // ID único
+                    date: date,
+                    category: category,
+                    description: description,
+                    value: value
+                };
+                
+                expensesData.push(expense);
+                saveToLocalStorage();
+                updateUI();
+                
+                // Limpar campos
+                expenseDescription.value = '';
+                expenseValue.value = '';
+                expenseDate.value = todayFormatted;
+                
+                showToast('Gasto adicionado com sucesso!');
+                expenseDescription.focus();
+            }
+            
+            // Função para definir limite diário
+            function setDailyLimit() {
+                const limit = parseFloat(dailyLimit.value.replace(',', '.'));
+                if (isNaN(limit) || limit <= 0) {
+                    showToast('Por favor, informe um valor válido para o limite diário.');
+                    return;
+                }
+                dailyLimitValue = limit;
+                localStorage.setItem('dailyLimit', dailyLimitValue.toString());
+                updateLimitUI();
+                showToast('Limite diário definido com sucesso!');
+            }
+            
+            // Função para salvar limites por categoria
+            function saveCategoryLimits() {
+                categoryLimits = {
+                    Supermercado: parseFloat(document.getElementById('supermarketLimit').value.replace(',', '.')) || 0,
+                    'Almoço/Jantar': parseFloat(document.getElementById('foodLimit').value.replace(',', '.')) || 0,
+                    Transporte: parseFloat(document.getElementById('transportLimit').value.replace(',', '.')) || 0,
+                    Lazer: parseFloat(document.getElementById('leisureLimit').value.replace(',', '.')) || 0
+                };
+                localStorage.setItem('categoryLimits', JSON.stringify(categoryLimits));
+                updateLimitsSummary();
+                showToast('Limites por categoria salvos com sucesso!');
+            }
+            
+            // Função para carregar dados do localStorage
+            function loadFromLocalStorage() {
+                const storedData = localStorage.getItem('expensesData');
+                if (storedData) expensesData = JSON.parse(storedData);
+                const storedLimit = localStorage.getItem('dailyLimit');
+                if (storedLimit) {
+                    dailyLimitValue = parseFloat(storedLimit);
+                    dailyLimit.value = dailyLimitValue;
+                }
+                const storedCategoryLimits = localStorage.getItem('categoryLimits');
+                if (storedCategoryLimits) {
+                    categoryLimits = JSON.parse(storedCategoryLimits);
+                    document.getElementById('supermarketLimit').value = categoryLimits.Supermercado || '';
+                    document.getElementById('foodLimit').value = categoryLimits['Almoço/Jantar'] || '';
+                    document.getElementById('transportLimit').value = categoryLimits.Transporte || '';
+                    document.getElementById('leisureLimit').value = categoryLimits.Lazer || '';
+                }
+            }
+            
+            // Função para salvar dados no localStorage
+            function saveToLocalStorage() {
+                localStorage.setItem('expensesData', JSON.stringify(expensesData));
+            }
+            
+            // Função para atualizar a interface
+            function updateUI() {
+                updateTodayExpenses();
+                updateHistoryTable();
+                updateSummary();
+                updateLimitUI();
+                updateLimitsSummary();
+            }
+            
+            // Função para atualizar gastos de hoje
+            function updateTodayExpenses() {
+                const todayExpenses = expensesData.filter(expense => expense.date === todayFormatted);
+                todayExpensesBody.innerHTML = '';
+                if (todayExpenses.length === 0) {
+                    todayExpensesBody.innerHTML = `
+                        <tr>
+                            <td colspan="3" style="text-align: center;">
+                                <div class="empty-state">
+                                    <i class="fas fa-receipt"></i>
+                                    <p>Nenhum gasto hoje</p>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                } else {
+                    todayExpenses.forEach(expense => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${expense.category}</td>
+                            <td>${expense.description}</td>
+                            <td class="negative">R$ ${expense.value.toFixed(2)}</td>
+                        `;
+                        todayExpensesBody.appendChild(row);
+                    });
+                }
+            }
+            
+            // Função para atualizar a tabela de histórico
+            function updateHistoryTable() {
+                const month = monthFilter.value;
+                const year = yearFilter.value;
+                const category = categoryFilter.value;
+                let filteredData = [...expensesData];
+                if (month) {
+                    filteredData = filteredData.filter(expense => expense.date.split('-')[1] === month);
+                }
+                if (year) {
+                    filteredData = filteredData.filter(expense => expense.date.split('-')[0] === year);
+                }
+                if (category) {
+                    filteredData = filteredData.filter(expense => expense.category === category);
+                }
+                filteredData.sort((a, b) => new Date(b.date) - new Date(a.date));
+                historyBody.innerHTML = '';
+                if (filteredData.length === 0) {
+                    historyBody.innerHTML = `
+                        <tr>
+                            <td colspan="5" style="text-align: center;">
+                                <div class="empty-state">
+                                    <i class="fas fa-receipt"></i>
+                                    <p>Nenhum gasto encontrado</p>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                } else {
+                    filteredData.forEach(expense => {
+                        const row = document.createElement('tr');
+                        const dateObj = new Date(expense.date);
+                        const formattedDate = dateObj.toLocaleDateString('pt-BR');
+                        row.innerHTML = `
+                            <td>${formattedDate}</td>
+                            <td>${expense.category}</td>
+                            <td>${expense.description}</td>
+                            <td class="negative">R$ ${expense.value.toFixed(2)}</td>
+                            <td>
+                                <button class="btn btn-danger btn-small" onclick="deleteExpense(${expense.id})">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        `;
+                        historyBody.appendChild(row);
+                    });
+                }
+            }
+            
+            // Função para atualizar o resumo financeiro
+            function updateSummary() {
+                const todayExpenses = expensesData.filter(expense => expense.date === todayFormatted);
+                const total = todayExpenses.reduce((sum, expense) => sum + expense.value, 0);
+                const highest = todayExpenses.length > 0 ? Math.max(...todayExpenses.map(expense => expense.value)) : 0;
+                totalExpensesElement.textContent = `R$ ${total.toFixed(2)}`;
+                highestExpenseElement.textContent = `R$ ${highest.toFixed(2)}`;
+            }
+            
+            // Função para atualizar a UI do limite diário
+            function updateLimitUI() {
+                const todayExpenses = expensesData
+                    .filter(expense => expense.date === todayFormatted)
+                    .reduce((sum, expense) => sum + expense.value, 0);
+                todayExpensesElement.textContent = `R$ ${todayExpenses.toFixed(2)}`;
+                limitTextElement.textContent = `Limite: R$ ${dailyLimitValue.toFixed(2)}`;
+                let percentage = 0;
+                if (dailyLimitValue > 0) {
+                    percentage = (todayExpenses / dailyLimitValue) * 100;
+                    percentage = Math.min(percentage, 100);
+                }
+                limitProgressElement.style.width = `${percentage}%`;
+                progressTextElement.textContent = `${percentage.toFixed(0)}% do limite`;
+                if (percentage >= 100) {
+                    limitProgressElement.className = 'progress danger';
+                    limitCardElement.className = 'card limit-card';
+                } else if (percentage >= 80) {
+                    limitProgressElement.className = 'progress warning';
+                    limitCardElement.className = 'card limit-card warning';
+                } else {
+                    limitProgressElement.className = 'progress';
+                    limitCardElement.className = 'card limit-card good';
+                }
+            }
+            
+            // Função para atualizar o resumo dos limites
+            function updateLimitsSummary() {
+                const limitsSummary = document.getElementById('limitsSummary');
+                if (Object.keys(categoryLimits).length === 0) {
+                    limitsSummary.innerHTML = '<p>Nenhum limite definido ainda.</p>';
+                    return;
+                }
+                let html = '';
+                for (const [category, limit] of Object.entries(categoryLimits)) {
+                    const spent = expensesData
+                        .filter(expense => expense.category === category)
+                        .reduce((sum, expense) => sum + expense.value, 0);
+                    const percentage = limit > 0 ? Math.min((spent / limit) * 100, 100) : 0;
+                    let statusClass = 'good';
+                    if (percentage >= 100) {
+                        statusClass = 'danger';
+                    } else if (percentage >= 80) {
+                        statusClass = 'warning';
+                    }
+                    html += `
+                        <div class="card ${statusClass}">
+                            <h3>${category}</h3>
+                            <p>Limite: R$ ${limit.toFixed(2)}</p>
+                            <p>Gasto: R$ ${spent.toFixed(2)}</p>
+                            <div class="progress-bar">
+                                <div class="progress ${statusClass}" style="width: ${percentage}%;"></div>
+                            </div>
+                            <div class="progress-text">${percentage.toFixed(0)}% do limite</div>
+                        </div>
+                    `;
+                }
+                limitsSummary.innerHTML = html;
+            }
+            // Função para limpar todos os dados
+            function clearAllData() {
+                if (confirm('Tem certeza que deseja limpar todos os dados? Esta ação não pode ser desfeita.')) {
+                    expensesData = [];
+                    dailyLimitValue = 0;
+                    categoryLimits = {};
+                    localStorage.clear();
+                    dailyLimit.value = '';
+                    document.getElementById('supermarketLimit').value = '';
+                    document.getElementById('foodLimit').value = '';
+                    document.getElementById('transportLimit').value = '';
+                    document.getElementById('leisureLimit').value = '';
+                    updateUI();
+                    showToast('Todos os dados foram limpos.');
+                }
+            }
+            // Função para exportar dados como CSV
+            function exportData() {
+                const month = monthFilter.value;
+                const year = yearFilter.value;
+                const category = categoryFilter.value;
+                let filteredData = [...expensesData];
+                if (month) {
+                    filteredData = filteredData.filter(expense => expense.date.split('-')[1] === month);
+                }
+                if (year) {
+                    filteredData = filteredData.filter(expense => expense.date.split('-')[0] === year);
+                }
+                if (category) {
+                    filteredData = filteredData.filter(expense => expense.category === category);
+                }
+                if (filteredData.length === 0) {
+                    showToast('Nenhum dado para exportar.');
+                    return;
+                }
+                
+                let csvContent = 'data:text/csv;charset=utf-8,';
+                csvContent += 'Data,Categoria,Descrição,Valor (R$)\n';
+                
+                filteredData.forEach(expense => {
+                    const dateObj = new Date(expense.date);
+                    const formattedDate = dateObj.toLocaleDateString('pt-BR');
+                    const row = `${formattedDate},${expense.category},"${expense.description}",${expense.value.toFixed(2)}\n`;
+                    csvContent += row;
+                });
+                
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement('a');
+                link.setAttribute('href', encodedUri);
+                const fileName = `gastos_${month || 'todos_meses'}_${year || 'todos_anos'}.csv`;
+                link.setAttribute('download', fileName);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                showToast('Dados exportados com sucesso!');
+            }
+            // Função para exportar dados para Excel
+            function exportToExcel() {
+                const exportAll = document.getElementById('exportAll').checked;
+                const includeCharts = document.getElementById('includeCharts').checked;
+                
+                let filteredData = [...expensesData];
+                if (!exportAll) {
+                    const month = monthFilter.value;
+                    const year = yearFilter.value;
+                    const category = categoryFilter.value;
+                    if (month) {
+                        filteredData = filteredData.filter(expense => expense.date.split('-')[1] === month);
+                    }
+                    if (year) {
+                        filteredData = filteredData.filter(expense => expense.date.split('-')[0] === year);
+                    }
+                    if (category) {
+                        filteredData = filteredData.filter(expense => expense.category === category);
+                    }
+                }
+                
+                if (filteredData.length === 0) {
+                    showToast('Nenhum dado para exportar.');
+                    return;
+                }
+                
+                // Criar workbook e worksheet
+                const wb = XLSX.utils.book_new();
+                const wsData = [
+                    ['Data', 'Categoria', 'Descrição', 'Valor (R$)']
+                ];
+                
+                filteredData.forEach(expense => {
+                    const dateObj = new Date(expense.date);
+                    const formattedDate = dateObj.toLocaleDateString('pt-BR');
+                    wsData.push([formattedDate, expense.category, expense.description, expense.value]);
+                });
+                
+                const ws = XLSX.utils.aoa_to_sheet(wsData);
+                XLSX.utils.book_append_sheet(wb, ws, 'Gastos');
+                
+                // Adicionar gráficos e resumos se necessário
+                if (includeCharts) {
+                    // Resumo de gastos por categoria
+                    const categorySummary = {};
+                    filteredData.forEach(expense => {
+                        if (!categorySummary[expense.category]) {
+                            categorySummary[expense.category] = 0;
+                        }
+                        categorySummary[expense.category] += expense.value;
+                    });
+                    
+                    const summaryData = [['Categoria', 'Total (R$)']];
+                    for (const [category, total] of Object.entries(categorySummary)) {
+                        summaryData.push([category, total]);
+                    }
+                    
+                    const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+                    XLSX.utils.book_append_sheet(wb, wsSummary, 'Resumo por Categoria');
+                    
+                    // Gráfico de pizza pode ser adicionado aqui se a biblioteca suportar
+                }
+                
+                // Exportar arquivo Excel
+                XLSX.writeFile(wb, 'gastos.xlsx');
+            }
+            // Função para deletar um gasto
+            window.deleteExpense = function(id) {
+                if (confirm('Tem certeza que deseja deletar este gasto?')) {
+                    expensesData = expensesData.filter(expense => expense.id !== id);
+                    saveToLocalStorage();
+                    updateUI();
+                    showToast('Gasto deletado com sucesso!');
+                }
+            }
+            // Função para mostrar toast de notificação
+            function showToast(message) {
+                const toast = document.getElementById('toast');
+                toast.textContent = message;
+                toast.className = 'toast show';
+                setTimeout(() => {
+                    toast.className = 'toast';
+                }, 3000);
+            }
+        });
+    </script>
+</body>
+</html>
