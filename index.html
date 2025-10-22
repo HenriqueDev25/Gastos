@@ -168,6 +168,14 @@
             background: #165a34;
         }
         
+        .btn-sync {
+            background: #9b59b6;
+        }
+        
+        .btn-sync:active {
+            background: #8e44ad;
+        }
+        
         .summary-cards {
             display: flex;
             flex-direction: column;
@@ -416,6 +424,36 @@
                 padding: 12px;
             }
         }
+
+        .sync-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+            font-size: 0.85rem;
+        }
+
+        .sync-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #7f8c8d;
+        }
+
+        .sync-indicator.synced {
+            background-color: #2ecc71;
+        }
+
+        .sync-indicator.syncing {
+            background-color: #f39c12;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
     </style>
 </head>
 <body>
@@ -452,12 +490,17 @@
                     <input type="number" id="expenseValue" placeholder="0,00" step="0.01" min="0">
                 </div>
                 <button class="btn btn-success" id="addExpenseBtn">Adicionar Gasto</button>
+                <div class="sync-status">
+                    <div class="sync-indicator" id="syncIndicator"></div>
+                    <span id="syncStatus">Pronto para sincronizar</span>
+                </div>
             </div>
             
             <div class="section">
                 <h2><i class="fas fa-info-circle"></i> Como usar</h2>
                 <p>Preencha os dados do seu gasto e clique em "Adicionar Gasto".</p>
                 <p>Use as outras abas para ver seus gastos diários, histórico e definir limites.</p>
+                <p>Seus dados são sincronizados automaticamente com o banco de dados na nuvem.</p>
             </div>
         </div>
         
@@ -624,6 +667,7 @@
                 <div class="actions">
                     <button class="btn btn-danger" id="clearAllBtn">Limpar Tudo</button>
                     <button class="btn" id="exportBtn">Exportar CSV</button>
+                    <button class="btn btn-sync" id="syncBtn">Sincronizar</button>
                 </div>
             </div>
         </div>
@@ -693,6 +737,11 @@
 
     <script>
     document.addEventListener('DOMContentLoaded', function() {
+            // Configurações do banco de dados
+            const API_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiYzczYTJjOWItNWNiYS00NDYxLTlmNzQtYWUzM2ZhY2JjM2Q1In0.dXQPiLIaUjdgvkbOrTXiz5cWSR4ZoXXzHsKY9CwAkJA';
+            const DB_URL = 'https://mysql.shardatabases.app/api/sql';
+            const USER_ID = '5a1d347e-6482-4fac-a778-c5091248b919';
+            
             // Elementos da interface
             const tabs = document.querySelectorAll('.tab');
             const tabContents = document.querySelectorAll('.tab-content');
@@ -712,6 +761,9 @@
             const exportBtn = document.getElementById('exportBtn');
             const saveLimitsBtn = document.getElementById('saveLimitsBtn');
             const exportExcelBtn = document.getElementById('exportExcelBtn');
+            const syncBtn = document.getElementById('syncBtn');
+            const syncIndicator = document.getElementById('syncIndicator');
+            const syncStatus = document.getElementById('syncStatus');
             
             const todayExpensesBody = document.getElementById('todayExpensesBody');
             const historyBody = document.getElementById('historyBody');
@@ -727,6 +779,7 @@
             let expensesData = [];
             let dailyLimitValue = 0;
             let categoryLimits = {};
+            let isOnline = false;
             
             // Inicializar data atual
             const today = new Date();
@@ -759,6 +812,9 @@
             updateUI();
             updateTabIndicator();
             
+            // Verificar conexão com o banco de dados
+            checkDatabaseConnection();
+            
             // Event Listeners para abas
             tabs.forEach(tab => {
                 tab.addEventListener('click', () => {
@@ -790,9 +846,174 @@
             exportBtn.addEventListener('click', exportData);
             saveLimitsBtn.addEventListener('click', saveCategoryLimits);
             exportExcelBtn.addEventListener('click', exportToExcel);
+            syncBtn.addEventListener('click', syncWithDatabase);
+            
+            // Função para verificar conexão com o banco de dados
+            async function checkDatabaseConnection() {
+                try {
+                    updateSyncStatus('Conectando...', 'syncing');
+                    
+                    // Primeiro, vamos verificar se a tabela existe e criá-la se necessário
+                    await createTablesIfNotExists();
+                    
+                    // Agora vamos sincronizar os dados
+                    await syncWithDatabase();
+                    
+                    updateSyncStatus('Sincronizado', 'synced');
+                    isOnline = true;
+                } catch (error) {
+                    console.error('Erro ao conectar com o banco de dados:', error);
+                    updateSyncStatus('Offline - usando dados locais', '');
+                    isOnline = false;
+                }
+            }
+            
+            // Função para criar tabelas se não existirem
+            async function createTablesIfNotExists() {
+                const createTableSQL = `
+                    CREATE TABLE IF NOT EXISTS expenses (
+                        id VARCHAR(50) PRIMARY KEY,
+                        user_id VARCHAR(50) NOT NULL,
+                        date DATE NOT NULL,
+                        category VARCHAR(50) NOT NULL,
+                        description TEXT NOT NULL,
+                        value DECIMAL(10,2) NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                `;
+                
+                try {
+                    await executeSQL(createTableSQL);
+                    console.log('Tabela expenses verificada/criada com sucesso');
+                } catch (error) {
+                    console.error('Erro ao criar tabela:', error);
+                    throw error;
+                }
+            }
+            
+            // Função para executar SQL no banco de dados
+            async function executeSQL(sql, params = []) {
+                const response = await fetch(DB_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${API_KEY}`
+                    },
+                    body: JSON.stringify({
+                        sql: sql,
+                        params: params
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Erro HTTP: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                return result;
+            }
+            
+            // Função para sincronizar com o banco de dados
+            async function syncWithDatabase() {
+                try {
+                    updateSyncStatus('Sincronizando...', 'syncing');
+                    
+                    // Buscar dados do servidor
+                    const sql = 'SELECT * FROM expenses WHERE user_id = ? ORDER BY date DESC';
+                    const result = await executeSQL(sql, [USER_ID]);
+                    
+                    if (result && result.rows) {
+                        // Converter dados do servidor para o formato local
+                        const serverData = result.rows.map(row => ({
+                            id: row.id,
+                            date: row.date,
+                            category: row.category,
+                            description: row.description,
+                            value: parseFloat(row.value)
+                        }));
+                        
+                        // Mesclar dados locais e do servidor
+                        const localData = expensesData;
+                        const mergedData = mergeData(localData, serverData);
+                        
+                        // Atualizar dados locais
+                        expensesData = mergedData;
+                        saveToLocalStorage();
+                        
+                        // Enviar dados locais que não estão no servidor
+                        await sendLocalDataToServer(localData, serverData);
+                        
+                        updateUI();
+                        updateSyncStatus('Sincronizado', 'synced');
+                        showToast('Dados sincronizados com sucesso!');
+                    }
+                } catch (error) {
+                    console.error('Erro na sincronização:', error);
+                    updateSyncStatus('Erro na sincronização', '');
+                    showToast('Erro ao sincronizar dados');
+                }
+            }
+            
+            // Função para mesclar dados locais e do servidor
+            function mergeData(localData, serverData) {
+                const mergedMap = new Map();
+                
+                // Adicionar dados do servidor
+                serverData.forEach(item => {
+                    mergedMap.set(item.id, item);
+                });
+                
+                // Adicionar dados locais (sobrescrevem se existirem)
+                localData.forEach(item => {
+                    mergedMap.set(item.id, item);
+                });
+                
+                return Array.from(mergedMap.values());
+            }
+            
+            // Função para enviar dados locais para o servidor
+            async function sendLocalDataToServer(localData, serverData) {
+                const serverIds = new Set(serverData.map(item => item.id));
+                const localOnlyData = localData.filter(item => !serverIds.has(item.id));
+                
+                for (const expense of localOnlyData) {
+                    await saveExpenseToDatabase(expense);
+                }
+            }
+            
+            // Função para salvar um gasto no banco de dados
+            async function saveExpenseToDatabase(expense) {
+                const sql = `
+                    INSERT INTO expenses (id, user_id, date, category, description, value) 
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    ON DUPLICATE KEY UPDATE 
+                    date = VALUES(date), 
+                    category = VALUES(category), 
+                    description = VALUES(description), 
+                    value = VALUES(value)
+                `;
+                
+                await executeSQL(sql, [
+                    expense.id,
+                    USER_ID,
+                    expense.date,
+                    expense.category,
+                    expense.description,
+                    expense.value
+                ]);
+            }
+            
+            // Função para atualizar o status de sincronização
+            function updateSyncStatus(message, status) {
+                syncStatus.textContent = message;
+                syncIndicator.className = 'sync-indicator';
+                if (status) {
+                    syncIndicator.classList.add(status);
+                }
+            }
             
             // Função para adicionar gasto
-            function addExpense() {
+            async function addExpense() {
                 const date = expenseDate.value;
                 const category = expenseCategory.value;
                 const description = expenseDescription.value.trim();
@@ -806,7 +1027,7 @@
                 }
                 
                 const expense = {
-                    id: Date.now(), // ID único
+                    id: Date.now().toString(), // ID único como string
                     date: date,
                     category: category,
                     description: description,
@@ -816,6 +1037,17 @@
                 expensesData.push(expense);
                 saveToLocalStorage();
                 updateUI();
+                
+                // Tentar salvar no banco de dados se estiver online
+                if (isOnline) {
+                    try {
+                        await saveExpenseToDatabase(expense);
+                        updateSyncStatus('Sincronizado', 'synced');
+                    } catch (error) {
+                        console.error('Erro ao salvar no banco de dados:', error);
+                        updateSyncStatus('Erro ao sincronizar', '');
+                    }
+                }
                 
                 // Limpar campos
                 expenseDescription.value = '';
@@ -1030,8 +1262,9 @@
                 }
                 limitsSummary.innerHTML = html;
             }
+            
             // Função para limpar todos os dados
-            function clearAllData() {
+            async function clearAllData() {
                 if (confirm('Tem certeza que deseja limpar todos os dados? Esta ação não pode ser desfeita.')) {
                     expensesData = [];
                     dailyLimitValue = 0;
@@ -1042,10 +1275,24 @@
                     document.getElementById('foodLimit').value = '';
                     document.getElementById('transportLimit').value = '';
                     document.getElementById('leisureLimit').value = '';
+                    
+                    // Limpar dados do servidor se estiver online
+                    if (isOnline) {
+                        try {
+                            await executeSQL('DELETE FROM expenses WHERE user_id = ?', [USER_ID]);
+                            showToast('Todos os dados foram limpos (local e servidor).');
+                        } catch (error) {
+                            console.error('Erro ao limpar dados do servidor:', error);
+                            showToast('Dados locais limpos, mas erro ao limpar servidor.');
+                        }
+                    } else {
+                        showToast('Todos os dados locais foram limpos.');
+                    }
+                    
                     updateUI();
-                    showToast('Todos os dados foram limpos.');
                 }
             }
+            
             // Função para exportar dados como CSV
             function exportData() {
                 const month = monthFilter.value;
@@ -1087,6 +1334,7 @@
                 
                 showToast('Dados exportados com sucesso!');
             }
+            
             // Função para exportar dados para Excel
             function exportToExcel() {
                 const exportAll = document.getElementById('exportAll').checked;
@@ -1146,22 +1394,32 @@
                     
                     const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
                     XLSX.utils.book_append_sheet(wb, wsSummary, 'Resumo por Categoria');
-                    
-                    // Gráfico de pizza pode ser adicionado aqui se a biblioteca suportar
                 }
                 
                 // Exportar arquivo Excel
                 XLSX.writeFile(wb, 'gastos.xlsx');
             }
+            
             // Função para deletar um gasto
-            window.deleteExpense = function(id) {
+            window.deleteExpense = async function(id) {
                 if (confirm('Tem certeza que deseja deletar este gasto?')) {
                     expensesData = expensesData.filter(expense => expense.id !== id);
                     saveToLocalStorage();
+                    
+                    // Deletar do servidor se estiver online
+                    if (isOnline) {
+                        try {
+                            await executeSQL('DELETE FROM expenses WHERE id = ? AND user_id = ?', [id, USER_ID]);
+                        } catch (error) {
+                            console.error('Erro ao deletar do servidor:', error);
+                        }
+                    }
+                    
                     updateUI();
                     showToast('Gasto deletado com sucesso!');
                 }
             }
+            
             // Função para mostrar toast de notificação
             function showToast(message) {
                 const toast = document.getElementById('toast');
